@@ -1,13 +1,28 @@
 import { Kafka} from   'kafkajs'
-const fromTopic= "il1-prod-UserManagementNotificationsPartitioned";
-const toTopic ="il1-prod-ChangelogValidEventBus";
-const kafka = new Kafka({
-    clientId: 'my-app',
-    brokers: ['il1a-kfk4-br1:9092', 'il1a-kfk4-br2:9092']
-})
 
+//il1
+//const fromTopic= "il1-772124794258";
+//  const fromTopic= "il1-prod-UserManagementNotificationsPartitioned";
+// const toTopic ="il1-772124794258-s";
+//
+//
+// const kafka = new Kafka({
+//     clientId: 'my-app',
+//     brokers: ['il1a-kfk4-br1:9092', 'il1a-kfk4-br2:9092']
+// })
+
+//eu1eu1a-kfk1-br1:9092,eu1b-kfk1-br2:9092
+const fromTopic= "eu1-prod-UserManagementNotificationsPartitioned";
+const toTopic ="cl-UEFA-8352404";
+
+
+const kafka = new Kafka({
+    clientId: 'cl-UEFA-8352404',
+    brokers: ['eu1eu1a-kfk1-br1:9092', 'eu1b-kfk1-br2:9092']
+})
 const producer = kafka.producer()
-const consumer = kafka.consumer({ groupId: 'test-group-2' })
+const consumer = kafka.consumer({ groupId: 'cl-UEFA-eu1-dev' })
+const site =  '8352404_';
 
 const run = async () => {
     // Producing
@@ -30,9 +45,9 @@ const run = async () => {
                 offset: message.offset,
                 value: msgValue,
             })
-            if(msgValue.indexOf('847053487682') >0 ) {
+            if(msgKey.startsWith(site) ) {
                 console.log({
-                    site:847053487682,
+                    site:site,
                     partition,
                     msgKey,
                     headers,
@@ -49,6 +64,8 @@ const run = async () => {
                          },
                     ],
                 })
+                
+           
              
             }
         },
