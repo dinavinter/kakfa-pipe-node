@@ -18,7 +18,7 @@ const toTopic ="cl-UEFA-8352404";
 
 const kafka = new Kafka({
     clientId: 'cl-UEFA-8352404',
-    brokers: ['eu1eu1a-kfk1-br1:9092', 'eu1b-kfk1-br2:9092']
+    brokers: ['eu1a-kfk1-br1:9092', 'eu1b-kfk1-br2:9092']
 })
 const producer = kafka.producer()
 const consumer = kafka.consumer({ groupId: 'cl-UEFA-eu1-dev' })
@@ -33,43 +33,52 @@ const run = async () => {
     await consumer.subscribe({ topic: fromTopic, fromBeginning: true })
     await producer.connect()
 
-    await consumer.run({ 
-        eachMessage: async ({ topic, partition, message }) => {
-            var msgValue=message.value.toString();
-            var msgKey=message.key.toString();
-            var headers=message.headers.toString();
-            console.log({
-                partition,
-                msgKey,
-                headers,
-                offset: message.offset,
-                value: msgValue,
-            })
-            if(msgKey.startsWith(site) ) {
+    await consumer.run({
+
+        eachBatch: async ({
+                              batch,
+                              resolveOffset,
+                              heartbeat,
+                              commitOffsetsIfNecessary,
+                              uncommittedOffsets,
+                              isRunning,
+                              isStale,
+                          }) => {
+            for (let message of batch.messages.filter((value, index) => value.key.toString().startsWith(site))) {
+                let msgKey= message.key.toString();
+                let msgValue= message.value.toString();
                 console.log({
-                    site:site,
-                    partition,
-                    msgKey,
-                    headers,
-                    offset: message.offset,
-                    value: msgValue,
-                })
-                await producer.send({
-                    topic: toTopic,
-                    messages: [
-                        {
-                            headers: headers,
-                            key: msgKey,
-                            value:msgValue
-                         },
-                    ],
+                    topic: batch.topic,
+                    partition: batch.partition,
+                    highWatermark: batch.highWatermark,
+                    message: {
+                        offset: message.offset,
+                        key: msgKey,
+                        value: msgValue,
+                        headers: message.headers,
+                    }
                 })
                 
-           
-             
+                    // await producer.send({
+                    //     topic: toTopic,
+                    //     messages: [
+                    //         {
+                    //             headers: headers,
+                    //             key: msgKey,
+                    //             value:msgValue
+                    //         },
+                    //     ],
+                    // })
+
+
+
+                }
+                resolveOffset(message.offset)
+                await heartbeat()
             }
-        },
-    })
-}
+        }) ;
+    
+     };
+ 
 
 run().catch(console.error)
